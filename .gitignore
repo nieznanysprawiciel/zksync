@@ -47,3 +47,6 @@ loadtest_accounts_*
 go_to_env.sh
 
 core/lib/storage/.env
+
+# Yagna integration
+.env

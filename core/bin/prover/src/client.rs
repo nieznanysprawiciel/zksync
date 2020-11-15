@@ -86,7 +86,7 @@ impl ApiClient {
 
     pub fn register_prover(&self, block_size: usize) -> Result<i32, anyhow::Error> {
         let op = || -> Result<i32, anyhow::Error> {
-            info!("Registering prover...");
+            info!("Registering prover... Block size: {}", block_size);
             let res = self
                 .http_client
                 .post(self.register_url.as_str())
@@ -97,12 +97,13 @@ impl ApiClient {
                 .send();
 
             let res = res.map_err(|e| format_err!("register request failed: {}", e))?;
+            let code = res.status();
             let text = res
                 .text()
                 .map_err(|e| format_err!("failed to read register response: {}", e))?;
 
             Ok(i32::from_str(&text)
-                .map_err(|e| format_err!("failed to parse register prover id: {}", e))?)
+                .map_err(|e| format_err!("{}: failed to parse register prover id: {}", code, e))?)
         };
 
         Ok(self.with_retries(&op)?)
