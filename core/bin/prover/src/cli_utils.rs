@@ -27,20 +27,31 @@ fn api_client_from_env(worker_name: &str) -> client::ApiClient {
     author = "Matter Labs",
     rename_all = "snake_case"
 )]
-struct Opt {
+pub struct Opt {
     /// Name of the worker. Must be unique!
     #[structopt(index = 1)]
-    worker_name: String,
+    pub worker_name: String,
 }
 
 pub fn main_for_prover_impl<P: ProverImpl<client::ApiClient> + 'static + Send + Sync>() {
     let opt = Opt::from_args();
     let worker_name = opt.worker_name;
 
+    let api_client = api_client_from_env(&worker_name);
+
+    main_prover_internal::<client::ApiClient, P>(&worker_name, api_client);
+}
+
+pub fn main_prover_internal<
+    C: ApiClient + Clone + Send + Sync + 'static,
+    P: ProverImpl<C> + Send + Sync + 'static,
+>(
+    worker_name: &str,
+    api_client: C,
+) {
     // used env
     let heartbeat_interval = ProverOptions::from_env().heartbeat_interval;
-    let prover_config = <P as ProverImpl<client::ApiClient>>::Config::from_env();
-    let api_client = api_client_from_env(&worker_name);
+    let prover_config = <P as ProverImpl<C>>::Config::from_env();
     let prover = P::create_from_config(prover_config, api_client.clone(), heartbeat_interval);
 
     env_logger::init();
@@ -74,7 +85,7 @@ pub fn main_for_prover_impl<P: ProverImpl<client::ApiClient> + 'static + Send + 
 
             shutdown_request.set();
         })
-        .expect("Failed to register ctrlc handler");
+            .expect("Failed to register ctrlc handler");
     }
 
     // Register prover

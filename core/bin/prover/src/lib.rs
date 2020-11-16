@@ -17,7 +17,8 @@ use std::{
 use zksync_crypto::rand::Rng;
 // Workspace deps
 use zksync_config::ProverOptions;
-use zksync_crypto::{proof::EncodedProofPlonk, Engine};
+use zksync_crypto::proof::EncodedProofPlonk;
+use zksync_prover_utils::prover_data::ProverData;
 
 const ABSENT_PROVER_ID: i32 = -1;
 
@@ -85,12 +86,10 @@ pub trait ProverImpl<C: ApiClient> {
 pub trait ApiClient: Debug {
     fn block_to_prove(&self, block_size: usize) -> Result<Option<(i64, i32)>, anyhow::Error>;
     fn working_on(&self, job_id: i32) -> Result<(), anyhow::Error>;
-    fn prover_data(
-        &self,
-        block: i64,
-    ) -> Result<zksync_circuit::circuit::ZkSyncCircuit<'_, Engine>, anyhow::Error>;
+    fn prover_data(&self, block: i64) -> Result<ProverData, anyhow::Error>;
     fn publish(&self, block: i64, p: EncodedProofPlonk) -> Result<(), anyhow::Error>;
     fn prover_stopped(&self, prover_run_id: i32) -> Result<(), anyhow::Error>;
+    fn register_prover(&self, block_size: usize) -> Result<i32, anyhow::Error>;
 }
 
 #[derive(Debug)]

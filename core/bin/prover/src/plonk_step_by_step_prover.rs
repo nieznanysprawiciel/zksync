@@ -105,12 +105,16 @@ impl<C: ApiClient> ProverImpl<C> for PlonkStepByStepProver<C> {
         if job_id == 0 {
             return Ok(());
         }
-        let instance = self.api_client.prover_data(block).map_err(|err| {
-            BabyProverError::Api(format!(
-                "could not get prover data for block {}: {}",
-                block, err
-            ))
-        })?;
+        let instance = self
+            .api_client
+            .prover_data(block)
+            .map(|prover_data| prover_data.into_circuit(block))
+            .map_err(|err| {
+                BabyProverError::Api(format!(
+                    "could not get prover data for block {}: {}",
+                    block, err
+                ))
+            })?;
 
         log::info!(
             "starting to compute proof for block {}, size: {}",

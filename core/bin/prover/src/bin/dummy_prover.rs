@@ -78,12 +78,16 @@ impl<C: ApiClient> ProverImpl<C> for DummyProver<C> {
         }
 
         log::info!("got job id: {}, block {}", job_id, block);
-        let _instance = self.api_client.prover_data(block).map_err(|err| {
-            BabyProverError::Api(format!(
-                "could not get prover data for block {}: {}",
-                block, err
-            ))
-        })?;
+        let _instance = self
+            .api_client
+            .prover_data(block)
+            .map(|prover_data| prover_data.into_circuit(block))
+            .map_err(|err| {
+                BabyProverError::Api(format!(
+                    "could not get prover data for block {}: {}",
+                    block, err
+                ))
+            })?;
 
         log::info!("starting to compute proof for block {}", block,);
 

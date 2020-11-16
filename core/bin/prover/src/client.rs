@@ -9,9 +9,7 @@ use log::*;
 use reqwest::Url;
 // Workspace deps
 use crate::client;
-use zksync_circuit::circuit::ZkSyncCircuit;
 use zksync_crypto::proof::EncodedProofPlonk;
-use zksync_crypto::Engine;
 use zksync_prover_utils::api::{BlockToProveRes, ProverReq, PublishReq, WorkingOnReq};
 use zksync_prover_utils::prover_data::ProverData;
 
@@ -83,31 +81,6 @@ impl ApiClient {
         backoff.max_elapsed_time = Some(Duration::from_secs(2 * 60));
         backoff
     }
-
-    pub fn register_prover(&self, block_size: usize) -> Result<i32, anyhow::Error> {
-        let op = || -> Result<i32, anyhow::Error> {
-            info!("Registering prover... Block size: {}", block_size);
-            let res = self
-                .http_client
-                .post(self.register_url.as_str())
-                .json(&client::ProverReq {
-                    name: self.worker.clone(),
-                    block_size,
-                })
-                .send();
-
-            let res = res.map_err(|e| format_err!("register request failed: {}", e))?;
-            let code = res.status();
-            let text = res
-                .text()
-                .map_err(|e| format_err!("failed to read register response: {}", e))?;
-
-            Ok(i32::from_str(&text)
-                .map_err(|e| format_err!("{}: failed to parse register prover id: {}", code, e))?)
-        };
-
-        Ok(self.with_retries(&op)?)
-    }
 }
 
 impl crate::ApiClient for ApiClient {
@@ -154,7 +127,7 @@ impl crate::ApiClient for ApiClient {
         }
     }
 
-    fn prover_data(&self, block: i64) -> Result<ZkSyncCircuit<'_, Engine>, anyhow::Error> {
+    fn prover_data(&self, block: i64) -> Result<ProverData, anyhow::Error> {
         let op = || -> Result<ProverData, anyhow::Error> {
             trace!("sending prover_data");
             let res = self
@@ -172,7 +145,7 @@ impl crate::ApiClient for ApiClient {
         };
 
         let prover_data = self.with_retries(&op)?;
-        Ok(prover_data.into_circuit(block))
+        Ok(prover_data)
     }
 
     fn publish(&self, block: i64, proof: EncodedProofPlonk) -> Result<(), anyhow::Error> {
@@ -221,5 +194,30 @@ impl crate::ApiClient for ApiClient {
             .send()
             .map_err(|e| format_err!("prover stopped request failed: {}", e))?;
         Ok(())
+    }
+
+    fn register_prover(&self, block_size: usize) -> Result<i32, anyhow::Error> {
+        let op = || -> Result<i32, anyhow::Error> {
+            info!("Registering prover... Block size: {}", block_size);
+            let res = self
+                .http_client
+                .post(self.register_url.as_str())
+                .json(&client::ProverReq {
+                    name: self.worker.clone(),
+                    block_size,
+                })
+                .send();
+
+            let res = res.map_err(|e| format_err!("register request failed: {}", e))?;
+            let code = res.status();
+            let text = res
+                .text()
+                .map_err(|e| format_err!("failed to read register response: {}", e))?;
+
+            Ok(i32::from_str(&text)
+                .map_err(|e| format_err!("{}: failed to parse register prover id: {}", code, e))?)
+        };
+
+        Ok(self.with_retries(&op)?)
     }
 }

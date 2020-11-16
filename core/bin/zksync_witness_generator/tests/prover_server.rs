@@ -154,6 +154,7 @@ async fn api_client_simple_simulation() {
 
     let prover_data = client
         .prover_data(block)
+        .map(|prover_data| prover_data.into_circuit(block))
         .expect("failed to get prover data");
     assert_eq!(prover_data.old_root, Some(wanted_prover_data.old_root));
     assert_eq!(

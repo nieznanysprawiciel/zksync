@@ -5439,6 +5439,28 @@ dependencies = [
 ]
 
 [[package]]
+name = "yagna-prover"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "backoff",
+ "env_logger 0.6.2",
+ "log 0.4.11",
+ "reqwest",
+ "serde",
+ "serde_json",
+ "structopt",
+ "zksync_circuit",
+ "zksync_config",
+ "zksync_crypto",
+ "zksync_prover",
+ "zksync_prover_utils",
+ "zksync_state",
+ "zksync_types",
+ "zksync_utils",
+]
+
+[[package]]
 name = "zeroize"
 version = "1.1.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
