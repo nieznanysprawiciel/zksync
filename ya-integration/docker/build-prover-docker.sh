@@ -1,5 +1,5 @@
 #!/bin/bash
-# Run from zksync/ya-integration/ directory
+# Run from zksync/ directory
 
 source .env
 

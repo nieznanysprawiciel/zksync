@@ -3,8 +3,8 @@ use zksync_prover::plonk_step_by_step_prover::PlonkStepByStepProver;
 use zksync_utils::parse_env;
 
 mod client;
+use crate::client::YagnaApiClient;
 
-use client::YagnaApiClient;
 use std::time::Duration;
 use structopt::StructOpt;
 
