@@ -17,64 +17,47 @@ jobs:
 
     - name: setup-env
       run: |
-        echo "::set-env name=ZKSYNC_HOME::$(pwd)"
-        echo "::set-env name=PATH::$(echo `pwd`/bin:$PATH)"
-        echo "::set-env name=CI::1"
+        echo ZKSYNC_HOME=$(pwd) >> $GITHUB_ENV
+        echo CI=1 >> $GITHUB_ENV
+        echo $(pwd)/bin >> $GITHUB_PATH
 
     - name: update-deps
       run: |
         rustup update stable
         cargo sqlx --version || cargo install --version=0.1.0-beta.1 sqlx-cli
+        docker pull matterlabs/ci-integration-test:zk-latest
+
+    - name: zk
+      run: zk
 
     - name: lints
       run: |
-        zksync db-setup # So database will be created for compilation.
-        zksync dummy-prover ensure-disabled
+        zk db setup # So database will be created for compilation.
+        zk dummy-prover ensure-disabled
         cargo fmt --all -- --check
         # For some reason, `cargo clippy` currently doesn't work in sqlx offline mod. So, we're checking it in online mode.
-        f cargo clippy --tests --benches -- -D warnings
+        zk f cargo clippy --tests --benches -- -D warnings
         pushd sdk/zksync-crypto
         cargo fmt -- --check
         cargo clippy --all --tests --benches -- -D warnings
 
-    - name: init
-      run: zksync init
-
-    - name: js-tests
-      run: zksync js-tests
-
-    - name: zcli-tests
-      run: ci-zcli.sh
-
     - name: integration-tests
-      run: ci-integration-tests.sh
-
-    - name: data-restore
-      run: zksync data-restore check-existing
+      run: zk test integration all --in-docker
 
     - name: integration-testkit
-      run: zksync integration-testkit
+      run: zk test integration testkit
 
-    - name: test-contracts
-      run: zksync test-contracts
+    - name: contracts-unit-tests
+      run: zk test contracts
 
-    - name: rust-tests
-      run: f cargo test --release
+    - name: js-unit-tests
+      run: zk test js
 
-    - name: rust-sdk-tests
-      run: zksync rust-sdk-tests
+    - name: rust-unit-tests
+      run: zk test rust
 
     - name: zksync-crypto-tests
-      run: pushd sdk/zksync-crypto && f cargo test --release
-
-    - name: db-tests
-      run: zksync db-test
-
-    - name: prover-tests
-      run: zksync prover-tests
-
-    - name: circuit-tests
-      run: zksync circuit-tests "" `nproc`
+      run: pushd sdk/zksync-crypto && zk f cargo test --release
 
     services:
       geth:

@@ -80,10 +80,6 @@ describe(`ZkSync integration tests (token: ${token}, transport: ${transport})`, 
         await tester.testVerifiedWithdraw(alice, token, TX_AMOUNT);
     });
 
-    step('should execute a fast withdrawal', async () => {
-        await tester.testVerifiedWithdraw(alice, token, TX_AMOUNT, true);
-    });
-
     step('should execute a ForcedExit', async () => {
         await tester.testVerifiedForcedExit(alice, bob, token);
     });
@@ -96,12 +92,6 @@ describe(`ZkSync integration tests (token: ${token}, transport: ${transport})`, 
     it('should fail trying to send tx with wrong signature', async () => {
         await tester.testWrongSignature(alice, bob, token, TX_AMOUNT);
     });
-
-    it('should succeed resending a previously failed tx', async () => {
-        let nick = await tester.fundedWallet('5.0');
-        let mike = await tester.emptyWallet();
-        await tester.testTransactionResending(nick, mike, token, TX_AMOUNT);
-    })
 
     describe('Full Exit tests', () => {
         let carl: Wallet;
@@ -140,12 +130,47 @@ describe(`ZkSync integration tests (token: ${token}, transport: ${transport})`, 
     });
 });
 
-const transports = process.env.TEST_TRANSPORT ? [process.env.TEST_TRANSPORT.toUpperCase()] : ['HTTP', 'WS'];
-const tokens = process.env.TEST_TOKEN ? [process.env.TEST_TOKEN.toUpperCase()] : ['ETH', 'DAI'];
+// wBTC is chosen because it has decimals different from ETH (8 instead of 18).
+// Using this token will help us to detect decimals-related errors.
+const defaultERC20 = 'wBTC';
 
-for (const transport of transports) {
-    for (const token of tokens) {
-        // @ts-ignore
-        TestSuite(token, transport);
+let tokenAndTransport = [];
+if (process.env.TEST_TRANSPORT) {
+    if (process.env.TEST_TOKEN) {
+        // Both transport and token are set, use config from env.
+        const envTransport = process.env.TEST_TRANSPORT.toUpperCase();
+        const envToken = process.env.TEST_TOKEN.toUpperCase();
+        tokenAndTransport = [
+            {
+                transport: envTransport,
+                token: envToken
+            }
+        ];
+    } else {
+        // Only transport is set, use wBTC as default token for this transport.
+        const envTransport = process.env.TEST_TRANSPORT.toUpperCase();
+        tokenAndTransport = [
+            {
+                transport: envTransport,
+                token: defaultERC20
+            }
+        ];
     }
+} else {
+    // Default case: run HTTP&ETH / WS&wBTC.
+    tokenAndTransport = [
+        {
+            transport: 'HTTP',
+            token: 'ETH'
+        },
+        {
+            transport: 'WS',
+            token: defaultERC20
+        }
+    ];
+}
+
+for (const input of tokenAndTransport) {
+    // @ts-ignore
+    TestSuite(input.token, input.transport);
 }
