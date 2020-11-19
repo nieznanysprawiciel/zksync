@@ -1,4 +1,4 @@
-FROM rust:1.45 as builder
+FROM rust:1.48 as builder
 WORKDIR /usr/src/zksync
 COPY . .
 RUN cargo build --release
@@ -24,8 +24,8 @@ ENV PROVER_GONE_TIMEOUT 60000
 ENV DOCKER_DUMMY_PROVER "false"
 
 COPY --from=builder /usr/src/zksync/target/release/yagna-prover /bin/
-COPY ya-integration/docker/prover/ya-entry.sh /bin/
 COPY ya-integration/docker/prover/download-keys.sh /bin/
+COPY ya-integration/docker/prover/ya-entry.sh /bin/
 RUN download-keys.sh
 
 VOLUME /blocks /proofs
