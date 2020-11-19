@@ -1,4 +1,4 @@
-use anyhow::{anyhow, bail};
+use anyhow::anyhow;
 use reqwest::Url;
 use serde::{Deserialize, Serialize};
 use std::fs::File;
@@ -56,10 +56,7 @@ impl ApiClient for YagnaApiClient {
         if info.block_size == block_size {
             Ok(Some((info.block_id, info.job_id)))
         } else {
-            bail!(
-                "Block of size [{}] not available. Check other sizes.",
-                block_size
-            )
+            Ok(None)
         }
     }
 

@@ -1,13 +1,7 @@
-## zksync-prover already built everything, but we need to repeat this :(
 FROM rust:1.45 as builder
-RUN --mount=type=cache,target=/usr/local/cargo/registry \
-    cargo install sccache
 WORKDIR /usr/src/zksync
 COPY . .
-RUN --mount=type=cache,target=/usr/local/cargo/registry \
-    --mount=type=cache,target=/root/.cache/sccache \
-    RUSTC_WRAPPER=/usr/local/cargo/bin/sccache \
-    cargo build --release
+RUN cargo build --release
 
 FROM zksync-prover:0.1
 
@@ -29,10 +23,9 @@ ENV PROVER_CYCLE_WAIT 500
 ENV PROVER_GONE_TIMEOUT 60000
 ENV DOCKER_DUMMY_PROVER "false"
 
-COPY --from=builder /usr/src/zksync/target/release/yagna_prover /bin/
-
-COPY docker/prover/ya-entry.sh /bin/
-COPY docker/prover/download-keys.sh /bin/
+COPY --from=builder /usr/src/zksync/target/release/yagna-prover /bin/
+COPY ya-integration/docker/prover/ya-entry.sh /bin/
+COPY ya-integration/docker/prover/download-keys.sh /bin/
 RUN download-keys.sh
 
 VOLUME /blocks /proofs
