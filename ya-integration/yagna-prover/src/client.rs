@@ -66,6 +66,14 @@ impl ApiClient for YagnaApiClient {
     }
 
     fn prover_data(&self, block: i64) -> Result<ProverData, anyhow::Error> {
+        if self.finish.load(Ordering::SeqCst) {
+            log::info!(
+                "Stopping.. This prover computes only one proof per execution. \
+                 This is not an error but normal behavior."
+            );
+            std::process::exit(0);
+        }
+
         // Yagna Requestor will command ExeUnit to download block and place in our directories.
         let block_path = blocks_info_dir().join(format!("block-{}.json", block));
 
@@ -86,7 +94,7 @@ impl ApiClient for YagnaApiClient {
         // Serialize proof and save on disk.
         // Yagna Requestor will download it from expected location and send to zksync server.
         let proof_path = proofs_info_dir().join(format!("proof-{}.json", block));
-        let file = File::open(&proof_path).map_err(|e| {
+        let file = File::create(&proof_path).map_err(|e| {
             anyhow!(
                 "Can't open proof file [{}]. Error: {}",
                 proof_path.display(),
